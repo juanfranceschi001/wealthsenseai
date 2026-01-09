@@ -1,0 +1,5 @@
+{
+  "name": "WealthSenseAI",
+  "description": "An intelligent stock portfolio assistant that uses Gemini 3 Pro with Google Search grounding to provide real-time market analysis and mobile-optimized trading insights.",
+  "requestFramePermissions": []
+}

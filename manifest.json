@@ -1,0 +1,26 @@
+
+{
+  "short_name": "WealthSenseAI",
+  "name": "WealthSenseAI: AI Stock Intelligence",
+  "description": "Smart stock portfolio tracking and AI-driven market predictions.",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2422/2422796.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2422/2422796.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#0f172a",
+  "background_color": "#0f172a",
+  "orientation": "portrait",
+  "scope": "/",
+  "categories": ["finance", "productivity"]
+}
