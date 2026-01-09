@@ -15,8 +15,13 @@
     "dotenv": "^16.4.5",
     "express": "^4.19.2"
   },
+  "devDependencies": {
+    "vite": "^5.3.1",
+    "@vitejs/plugin-react": "^4.3.1"
+  },
   "scripts": {
     "start": "npx servor . index.html 8080 --reload",
+    "build": "vite build",
     "android:add": "npx cap add android",
     "android:copy": "npx cap copy android",
     "android:sync": "npx cap sync android",
