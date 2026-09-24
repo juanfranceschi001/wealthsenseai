@@ -399,7 +399,7 @@ const App: React.FC = () => {
                  </div>
                  <div>
                    <h2 className="text-2xl font-black uppercase tracking-tighter">AI Buy <span className="text-blue-500">Suggestions</span></h2>
-                   <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">Opportunities detected via search — Use Caution</p>
+                   <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">Ideas from live market data — Use Caution</p>
                  </div>
                </div>
 
@@ -480,7 +480,7 @@ const App: React.FC = () => {
             DISCLAIMER: WEALTHSENSEAI IS AN EXPERIMENTAL AI TOOL. NO DATA PROVIDED CONSTITUTES INVESTMENT ADVICE. TRADING STOCKS INVOLVES RISK OF TOTAL CAPITAL LOSS. WE ARE NOT RESPONSIBLE FOR DAMAGES RESULTING FROM AI ERROR OR DATA INACCURACY.
           </p>
           <p className="text-slate-700 text-[10px] font-black uppercase tracking-[0.2em] max-w-lg mx-auto leading-loose">
-            WealthSenseAI • Pro/Flash Tiered Grounding • Safe Area Optimized
+            WealthSenseAI • Live Market Data • AI Insights
           </p>
         </div>
       </footer>
