@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="left" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#93c5fd"/>
+      <stop offset="0.45" stop-color="#3b82f6"/>
+      <stop offset="1" stop-color="#1d4ed8"/>
+    </linearGradient>
+    <linearGradient id="right" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#67e8f9"/>
+      <stop offset="0.5" stop-color="#22d3ee"/>
+      <stop offset="1" stop-color="#0891b2"/>
+    </linearGradient>
+    <path id="hemi" d="M505 318 C470 288 420 290 395 318 C352 300 303 326 305 374 C266 392 260 452 290 480 C260 518 274 578 322 590 C324 634 368 662 412 652 C442 682 490 678 505 650 Z"/>
+    <clipPath id="rightClip"><use href="#hemi" transform="matrix(-1 0 0 1 1024 0)"/></clipPath>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="10" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <g transform="translate(512 500) scale(1.14) translate(-512 -500)">
+  <!-- Left hemisphere: organic brain with folds -->
+  <use href="#hemi" fill="url(#left)"/>
+  <g fill="none" stroke="#1e3a8a" stroke-opacity="0.55" stroke-width="14" stroke-linecap="round">
+    <path d="M398 322 C415 352 382 380 402 414"/>
+    <path d="M307 376 C342 384 352 414 336 444"/>
+    <path d="M292 480 C332 470 362 492 394 480"/>
+    <path d="M322 588 C352 560 392 572 412 546"/>
+    <path d="M412 650 C422 612 462 602 474 572"/>
+    <path d="M472 350 C442 384 474 424 452 462"/>
+    <path d="M402 414 C432 426 452 452 492 444"/>
+    <path d="M452 520 C430 500 402 512 380 530"/>
+  </g>
+
+  <!-- Right hemisphere: circuit-board brain -->
+  <use href="#hemi" transform="matrix(-1 0 0 1 1024 0)" fill="url(#right)"/>
+  <g clip-path="url(#rightClip)" fill="none" stroke="#083344" stroke-opacity="0.6" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M519 372 H592 L628 336 H700"/>
+    <path d="M519 444 H640 L684 400 H760"/>
+    <path d="M519 516 H600 L646 562 H760"/>
+    <path d="M519 592 H580 L616 628 H700"/>
+    <path d="M660 444 V300"/>
+  </g>
+  <g fill="#ecfeff" stroke="#083344" stroke-width="9">
+    <circle cx="628" cy="336" r="15"/>
+    <circle cx="684" cy="400" r="15"/>
+    <circle cx="646" cy="562" r="15"/>
+    <circle cx="616" cy="628" r="15"/>
+    <circle cx="592" cy="372" r="11"/>
+    <circle cx="600" cy="516" r="11"/>
+  </g>
+
+  <!-- Rising stock line with arrow, cutting across both halves -->
+  <g stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <polyline points="286,664 404,560 480,610 610,462 700,365" stroke="#020617" stroke-width="64"/>
+    <polyline points="286,664 404,560 480,610 610,462 700,365" stroke="#22c55e" stroke-width="36" filter="url(#glow)"/>
+  </g>
+  <polygon points="743,318 726,404 657,341" fill="#22c55e" stroke="#020617" stroke-width="14" stroke-linejoin="round"/>
+  <g fill="#f0fdf4" stroke="#020617" stroke-width="8">
+    <circle cx="404" cy="560" r="17"/>
+    <circle cx="480" cy="610" r="17"/>
+    <circle cx="610" cy="462" r="17"/>
+  </g>
+  </g>
+</svg>

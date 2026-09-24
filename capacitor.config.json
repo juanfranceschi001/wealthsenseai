@@ -1,11 +1,8 @@
-
 {
   "appId": "com.wealthsenseai.app",
   "appName": "WealthSenseAI",
-  "webDir": ".",
-  "bundledWebRuntime": false,
+  "webDir": "dist",
   "server": {
-    "androidScheme": "https",
-    "cleartext": true
+    "androidScheme": "https"
   }
 }
