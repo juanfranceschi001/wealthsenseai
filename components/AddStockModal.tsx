@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { resolveTicker } from '../services/geminiService';
+import { resolveTicker, RateLimitError } from '../services/geminiService';
 
 interface AddStockModalProps {
   onClose: () => void;
@@ -13,18 +13,26 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ onClose, onAdd, is
   const [shares, setShares] = useState('');
   const [avgCost, setAvgCost] = useState('');
   const [isResolving, setIsResolving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!query || !shares) return;
 
     setIsResolving(true);
+    setError(null);
     try {
       const { symbol, name } = await resolveTicker(query);
+      if (!symbol || symbol === '???') {
+        setError("Could not find that stock. Please check the name or symbol.");
+        return;
+      }
       onAdd(symbol, name, parseFloat(shares), parseFloat(avgCost) || 0);
       onClose();
     } catch (err) {
-      alert("Could not find that stock. Please check the name or symbol.");
+      setError(err instanceof RateLimitError
+        ? "Too many requests. Please wait a minute and try again."
+        : (err as Error).message || "Could not reach the AI service. Please try again later.");
     } finally {
       setIsResolving(false);
     }
@@ -80,6 +88,10 @@ export const AddStockModal: React.FC<AddStockModalProps> = ({ onClose, onAdd, is
               />
             </div>
           </div>
+
+          {error && (
+            <p className="text-xs font-bold text-rose-400">{error}</p>
+          )}
 
           <button 
             type="submit"

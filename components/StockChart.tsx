@@ -59,7 +59,7 @@ export const StockChart: React.FC<StockChartProps> = ({ symbol, price }) => {
             <Tooltip 
               contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '12px', fontSize: '10px' }}
               itemStyle={{ color: isUp ? '#10b981' : '#f43f5e', fontWeight: 'bold' }}
-              formatter={(val: number) => [`$${val.toFixed(2)}`, 'Price']}
+              formatter={(val?: number) => [`$${(val ?? 0).toFixed(2)}`, 'Price']}
             />
             <Area 
               type="monotone" 

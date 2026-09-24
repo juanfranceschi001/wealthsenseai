@@ -12,7 +12,7 @@ const INITIAL_STOCKS: Stock[] = [
 ];
 
 const STORAGE_KEY = 'wealthsense_portfolio_v2';
-const PRICE_SYNC_INTERVAL = 45000; 
+const PRICE_SYNC_INTERVAL = 60000; // matches the quote proxy's 60s cache
 const WATCH_MODE_INTERVAL = 300000; 
 const COOLDOWN_PERIOD = 60000; 
 
@@ -23,7 +23,10 @@ const App: React.FC = () => {
   const [portfolio, setPortfolio] = useState<Stock[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
-      try { return JSON.parse(saved); } catch (e) { return INITIAL_STOCKS; }
+      try {
+        // Older Smart Paste imports saved a 'Loading...' placeholder name that never resolved.
+        return JSON.parse(saved).map((s: Stock) => s.name === 'Loading...' ? { ...s, name: s.symbol } : s);
+      } catch (e) { return INITIAL_STOCKS; }
     }
     return INITIAL_STOCKS;
   });
@@ -78,7 +81,7 @@ const App: React.FC = () => {
       if (error instanceof RateLimitError) {
         triggerCooldown();
       } else if (!isAuto) {
-        alert("AI Analysis failed. Checking connectivity...");
+        setToast("AI analysis failed. Check your connection and try again.");
       }
     } finally {
       setIsLoading(false);
@@ -126,7 +129,7 @@ const App: React.FC = () => {
       const extracted = await parsePortfolioFromText(importText);
       const formatted = extracted.map(ext => ({
         symbol: ext.symbol?.toUpperCase() || '?',
-        name: 'Loading...',
+        name: ext.name || ext.symbol?.toUpperCase() || 'Unknown',
         price: 0,
         change: 0,
         changePercent: 0,
@@ -139,6 +142,7 @@ const App: React.FC = () => {
       setToast("Imported assets successfully");
     } catch (error) {
       if (error instanceof RateLimitError) triggerCooldown();
+      else setToast("Import failed. Check your connection and try again.");
     } finally {
       setIsLoading(false);
     }
@@ -464,7 +468,7 @@ const App: React.FC = () => {
 
       {/* Global Toast Notification */}
       {toast && (
-        <div className="fixed bottom-12 left-1/2 -translate-x-1/2 z-[200] bg-blue-600 text-white px-6 py-3.5 rounded-full font-black uppercase tracking-[0.1em] text-[10px] shadow-2xl shadow-blue-600/40 animate-in slide-in-from-bottom-8 duration-300 flex items-center gap-3">
+        <div className="fixed bottom-[calc(3rem+var(--ad-height,0px))] left-1/2 -translate-x-1/2 z-[200] bg-blue-600 text-white px-6 py-3.5 rounded-full font-black uppercase tracking-[0.1em] text-[10px] shadow-2xl shadow-blue-600/40 animate-in slide-in-from-bottom-8 duration-300 flex items-center gap-3">
           <i className="fas fa-check-circle"></i>
           {toast}
         </div>
