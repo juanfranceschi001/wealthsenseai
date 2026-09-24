@@ -26,8 +26,8 @@ android {
         applicationId "com.wealthsenseai.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode 2
+        versionName "1.1"
         manifestPlaceholders = [admobAppId: admobProperties.getProperty('ADMOB_APP_ID', 'ca-app-pub-3940256099942544~3347511713')]
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
