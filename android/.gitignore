@@ -102,3 +102,8 @@ app/src/main/res/xml/config.xml
 
 # AdMob App ID (see app/build.gradle)
 admob.properties
+
+# Release signing (see app/build.gradle)
+key.properties
+*.jks
+*.keystore
