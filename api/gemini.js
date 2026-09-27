@@ -74,34 +74,57 @@ const getAI = () => {
 const isModelUnavailable = (error) =>
     [404, 429, 500, 503, 504].includes(error?.status) || error?.name === 'AbortError' || error?.name === 'TimeoutError';
 
+// Total time one request may spend waiting on models. Free-tier 503s are
+// usually momentary, so after a full pass over the list fails we pause briefly
+// and walk it once more, as long as there is budget left.
+const TOTAL_BUDGET_MS = 75_000;
+const RETRY_PAUSE_MS = 2_000;
+const MAX_PASSES = 2;
+
+class ModelsBusy extends Error {}
+
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 // Returns the response text from the first available model.
 const generate = async ({ contents, config }) => {
     const ai = getAI();
+    const startedAt = Date.now();
     let lastError;
-    for (const model of MODELS) {
-        try {
-            const response = await ai.models.generateContent({
-                model,
-                contents,
-                config: {
-                    // Caps runaway output (lite models occasionally loop on a digit).
-                    maxOutputTokens: 4096,
-                    ...config,
-                    abortSignal: AbortSignal.timeout(MODEL_TIMEOUT_MS),
-                },
-            });
-            // A cut-off or malformed JSON answer counts as a failed model, not a result.
-            if (config.responseMimeType === 'application/json' && parseJson(response.text, undefined) === undefined) {
-                throw new InvalidModelOutput(`${model} returned invalid JSON`);
+    for (let pass = 0; pass < MAX_PASSES; pass++) {
+        if (pass > 0) {
+            if (Date.now() - startedAt + RETRY_PAUSE_MS + MODEL_TIMEOUT_MS / 2 > TOTAL_BUDGET_MS) break;
+            await sleep(RETRY_PAUSE_MS);
+        }
+        for (const model of MODELS) {
+            const remaining = TOTAL_BUDGET_MS - (Date.now() - startedAt);
+            if (remaining < 5_000) break;
+            try {
+                const response = await ai.models.generateContent({
+                    model,
+                    contents,
+                    config: {
+                        // Caps runaway output (lite models occasionally loop on a digit).
+                        maxOutputTokens: 4096,
+                        ...config,
+                        abortSignal: AbortSignal.timeout(Math.min(MODEL_TIMEOUT_MS, remaining)),
+                    },
+                });
+                // A cut-off or malformed JSON answer counts as a failed model, not a result.
+                if (config.responseMimeType === 'application/json' && parseJson(response.text, undefined) === undefined) {
+                    const finish = response.candidates?.[0]?.finishReason;
+                    throw new InvalidModelOutput(`${model} returned invalid JSON (finishReason: ${finish || 'unknown'})`);
+                }
+                return response.text;
+            } catch (error) {
+                if (!isModelUnavailable(error) && !(error instanceof InvalidModelOutput)) throw error;
+                console.warn(`Model ${model} unavailable (${error.status || error.name}${error instanceof InvalidModelOutput ? `: ${error.message}` : ''}), trying next [pass ${pass + 1}]`);
+                lastError = error;
             }
-            return response.text;
-        } catch (error) {
-            if (!isModelUnavailable(error) && !(error instanceof InvalidModelOutput)) throw error;
-            console.warn(`Model ${model} unavailable (${error.status || error.name}), trying next`);
-            lastError = error;
         }
     }
-    throw lastError;
+    const busy = new ModelsBusy(lastError ? String(lastError.message || lastError) : 'No model answered in time');
+    busy.status = lastError?.status; // lets the handler still report quota exhaustion as 429
+    throw busy;
 };
 
 const SYMBOL_RE = /^[A-Z0-9.\-^]{1,12}$/;
@@ -308,11 +331,15 @@ const actions = {
     2. Pick up to 4 of the most important news items above as insights. Set newsId to the item's id, and write a short title, a one-sentence summary and a sentiment.
     3. Suggest 3 NEW stocks (not already in the portfolio) that would diversify or strengthen it, with a reason.
     4. Provide a short market summary for this portfolio.
+
+    Keep every reasoning, summary and reason to one short sentence (under 25 words) so the answer stays compact.
   `;
 
         const responseText = await generate({
             contents: prompt,
             config: {
+                // Headroom for up to 15 holdings; models that "think" count that against the cap.
+                maxOutputTokens: 8192,
                 responseMimeType: 'application/json',
                 responseSchema: {
                     type: Type.OBJECT,
@@ -440,6 +467,9 @@ module.exports = async (req, res) => {
         const message = String(error?.message || '');
         if (error?.status === 429 || message.includes('RESOURCE_EXHAUSTED') || message.includes('quota')) {
             return res.status(429).json({ error: 'AI Quota Exceeded. Please try again later.' });
+        }
+        if (error instanceof ModelsBusy) {
+            return res.status(503).json({ error: 'The AI service is busy right now. Please try again in a minute.' });
         }
         return res.status(500).json({ error: 'Failed to generate content from AI model' });
     }
