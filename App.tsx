@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Stock, AIAnalysisResult, Prediction, MarketInsight } from './types';
 import { analyzePortfolio, parsePortfolioFromText, syncStockPrices, RateLimitError } from './services/geminiService';
 import { StockCard } from './components/StockCard';
@@ -12,6 +12,31 @@ const INITIAL_STOCKS: Stock[] = [
 ];
 
 const STORAGE_KEY = 'wealthsense_portfolio_v2';
+const ANALYSIS_KEY = 'wealthsense_analysis_v1';
+const ANALYSIS_MAX_AGE = 6 * 60 * 60 * 1000; // re-run automatically on open once results are this old
+
+// Results are kept so they survive closing the app. Validated on load because
+// the UI dereferences predictions/insights/recommendations directly.
+const loadSavedAnalysis = (): { result: AIAnalysisResult; savedAt: number } | null => {
+  try {
+    const raw = localStorage.getItem(ANALYSIS_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    const r = parsed?.result;
+    if (typeof parsed?.savedAt === 'number' && Array.isArray(r?.predictions) && Array.isArray(r?.insights) && Array.isArray(r?.recommendations)) {
+      return { result: r, savedAt: parsed.savedAt };
+    }
+  } catch { /* fall through to null */ }
+  return null;
+};
+
+const timeAgo = (date: Date) => {
+  const mins = Math.max(0, Math.round((Date.now() - date.getTime()) / 60000));
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins} min ago`;
+  const hours = Math.round(mins / 60);
+  return hours < 24 ? `${hours} hr ago` : `${Math.round(hours / 24)} day(s) ago`;
+};
 const PRICE_SYNC_INTERVAL = 60000; // matches the quote proxy's 60s cache
 const WATCH_MODE_INTERVAL = 300000; 
 const COOLDOWN_PERIOD = 60000; 
@@ -33,11 +58,16 @@ const App: React.FC = () => {
 
   const [sortKey, setSortKey] = useState<SortKey>('symbol');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
-  const [analysis, setAnalysis] = useState<AIAnalysisResult | null>(null);
+  const [analysis, setAnalysis] = useState<AIAnalysisResult | null>(() => loadSavedAnalysis()?.result ?? null);
   const [isLoading, setIsLoading] = useState(false);
   const [isWatchMode, setIsWatchMode] = useState(false);
   const [isCoolingDown, setIsCoolingDown] = useState(false);
-  const [lastAnalysisTime, setLastAnalysisTime] = useState<Date | null>(null);
+  const [lastAnalysisTime, setLastAnalysisTime] = useState<Date | null>(() => {
+    const saved = loadSavedAnalysis();
+    return saved ? new Date(saved.savedAt) : null;
+  });
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const hasAutoAnalyzed = useRef(false);
   const [quotaError, setQuotaError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   
@@ -74,19 +104,35 @@ const App: React.FC = () => {
     setQuotaError(null);
     try {
       const result = await analyzePortfolio(portfolio);
+      const now = new Date();
       setAnalysis(result);
-      setLastAnalysisTime(new Date());
+      setLastAnalysisTime(now);
+      setAnalysisError(null);
+      try {
+        localStorage.setItem(ANALYSIS_KEY, JSON.stringify({ savedAt: now.getTime(), result }));
+      } catch { /* storage full/blocked: results still show for this session */ }
       if (!isAuto) setToast("Portfolio Analysis Complete");
     } catch (error) {
       if (error instanceof RateLimitError) {
         triggerCooldown();
-      } else if (!isAuto) {
-        setToast("AI analysis failed. Check your connection and try again.");
+      } else {
+        // Shown in a banner that stays until the next attempt succeeds; a
+        // 3-second toast was too easy to miss (and silent for auto runs).
+        setAnalysisError((error as Error).message || "AI analysis failed. Please try again.");
       }
     } finally {
       setIsLoading(false);
     }
   }, [portfolio, isLoading, isCoolingDown, triggerCooldown]);
+
+  // Run once when the app opens if there are no saved results yet (or they are
+  // stale), so first-time users see signals without having to find the button.
+  useEffect(() => {
+    if (hasAutoAnalyzed.current || portfolio.length === 0) return;
+    hasAutoAnalyzed.current = true;
+    const stale = !lastAnalysisTime || Date.now() - lastAnalysisTime.getTime() > ANALYSIS_MAX_AGE;
+    if (stale) runAIAnalysis(true);
+  }, [portfolio.length, lastAnalysisTime, runAIAnalysis]);
 
   // Real-time Price Sync
   useEffect(() => {
@@ -238,7 +284,7 @@ const App: React.FC = () => {
               disabled={isLoading || isCoolingDown}
               className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-blue-600/20 active:scale-95 transition-all"
             >
-              {isLoading ? <i className="fas fa-spinner fa-spin"></i> : 'AI Audit'}
+              {isLoading ? <i className="fas fa-spinner fa-spin"></i> : <><i className="fas fa-wand-magic-sparkles mr-2"></i>Analyze</>}
             </button>
           </div>
         </div>
@@ -251,8 +297,22 @@ const App: React.FC = () => {
         </div>
       )}
 
+      {analysisError && (
+        <div role="alert" className="bg-rose-500/10 border-b border-rose-500/30 px-4 py-3 flex items-center justify-center gap-3 flex-wrap">
+          <i className="fas fa-circle-exclamation text-rose-400 text-xs"></i>
+          <p className="text-[11px] font-bold text-rose-300">{analysisError}</p>
+          <button
+            onClick={() => runAIAnalysis()}
+            disabled={isLoading || isCoolingDown}
+            className="text-[10px] font-black uppercase tracking-widest text-rose-200 underline disabled:opacity-50"
+          >
+            Try again
+          </button>
+        </div>
+      )}
+
       <main className="max-w-7xl mx-auto p-4 sm:p-6 space-y-8 pb-32 flex-grow w-full">
-        
+
         {/* Global Financial Disclaimer Banner */}
         <div className="bg-amber-500/5 border border-amber-500/20 rounded-[32px] p-6 flex flex-col sm:flex-row items-center gap-6 relative overflow-hidden group">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-amber-500/50 to-transparent"></div>
@@ -266,6 +326,28 @@ const App: React.FC = () => {
             </p>
           </div>
         </div>
+
+        {/* Analysis status: tells first-time users where signals come from */}
+        {portfolio.length > 0 && (
+          <div className="bg-blue-500/5 border border-blue-500/20 rounded-2xl px-5 py-4 flex items-center justify-between gap-4 flex-wrap">
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              {isLoading
+                ? 'Analyzing your portfolio with live market data…'
+                : analysis && lastAnalysisTime
+                  ? <>AI signals, market news and stock ideas were updated <span className="text-slate-200 font-bold">{timeAgo(lastAnalysisTime)}</span>.</>
+                  : <>Tap <span className="text-slate-200 font-bold">Analyze</span> to get buy/sell/hold signals, market news and new stock ideas for your holdings.</>}
+            </p>
+            {!isLoading && (
+              <button
+                onClick={() => runAIAnalysis()}
+                disabled={isCoolingDown}
+                className="text-[10px] font-black uppercase tracking-widest text-blue-400 border border-blue-500/30 rounded-xl px-3 py-1.5 disabled:opacity-50"
+              >
+                {analysis ? 'Refresh' : 'Analyze now'}
+              </button>
+            )}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-2 bg-slate-900 border border-slate-800 rounded-[32px] p-8 relative overflow-hidden shadow-2xl">
