@@ -2,6 +2,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import './index.css';
 import { initAds } from './services/ads';
 
 const rootElement = document.getElementById('root');

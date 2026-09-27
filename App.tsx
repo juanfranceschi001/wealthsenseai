@@ -68,6 +68,7 @@ const App: React.FC = () => {
   });
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   const hasAutoAnalyzed = useRef(false);
+  const holdingsRef = useRef<HTMLElement | null>(null);
   const [quotaError, setQuotaError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   
@@ -111,7 +112,12 @@ const App: React.FC = () => {
       try {
         localStorage.setItem(ANALYSIS_KEY, JSON.stringify({ savedAt: now.getTime(), result }));
       } catch { /* storage full/blocked: results still show for this session */ }
-      if (!isAuto) setToast("Portfolio Analysis Complete");
+      if (!isAuto) {
+        setToast("Portfolio Analysis Complete");
+        // Signals appear inside the holdings cards, well below the Analyze button,
+        // so bring them into view once they've rendered.
+        setTimeout(() => holdingsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150);
+      }
     } catch (error) {
       if (error instanceof RateLimitError) {
         triggerCooldown();
@@ -394,7 +400,7 @@ const App: React.FC = () => {
         </div>
 
         {/* Portfolio Section */}
-        <section className="space-y-6">
+        <section ref={holdingsRef} className="space-y-6 scroll-mt-24">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div className="flex items-center gap-4">
               <h2 className="text-xl font-black uppercase tracking-tighter italic border-l-4 border-blue-500 pl-4">Your <span className="text-blue-500">Holdings</span></h2>
