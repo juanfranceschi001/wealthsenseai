@@ -5,6 +5,7 @@ import { analyzePortfolio, parsePortfolioFromText, syncStockPrices, RateLimitErr
 import { StockCard } from './components/StockCard';
 import { MarketInsightCard } from './components/MarketInsightCard';
 import { AddStockModal } from './components/AddStockModal';
+import { recordSuccessfulAudit } from './services/review';
 
 const INITIAL_STOCKS: Stock[] = [
   { symbol: 'NVDA', name: 'NVIDIA Corporation', price: 145.20, change: 2.30, changePercent: 1.61, shares: 10, avgCost: 120.00 },
@@ -117,6 +118,7 @@ const App: React.FC = () => {
         // Signals appear inside the holdings cards, well below the Analyze button,
         // so bring them into view once they've rendered.
         setTimeout(() => holdingsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150);
+        recordSuccessfulAudit();
       }
     } catch (error) {
       if (error instanceof RateLimitError) {

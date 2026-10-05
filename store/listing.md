@@ -3,13 +3,16 @@
 Paste into Play Console → Grow users → Store presence → Main store listing.
 
 ## App name (max 30)
-WealthSenseAI
+WealthSenseAI: Stock Tracker
+
+The name leads with the brand, then the main search term ("stock tracker");
+Play search weighs the title most, and the brand alone matched no searches.
 
 ## Short description (max 80)
-Track your stock portfolio with live quotes and AI buy, hold or sell signals.
+AI stock portfolio tracker: live prices, buy/hold/sell signals and market news.
 
 ## Full description (max 4000)
-WealthSenseAI is a stock portfolio tracker with an AI analyst built in. Add the stocks you own, watch your net worth update with live quotes, and tap AI Audit for a buy, hold or sell signal on every holding, based on real fundamentals and this week's news.
+WealthSenseAI is a stock portfolio tracker with AI stock analysis built in. Add the stocks you own, watch your net worth update with live stock market prices, and tap AI Audit for a buy, hold or sell signal on every holding, based on real fundamentals and this week's news.
 
 TRACK YOUR PORTFOLIO
 • Live quotes refresh every minute, so your net worth and every position stay current
