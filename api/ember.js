@@ -20,6 +20,11 @@
 // response_format to /v1/responses returns 400).
 // Docs: https://dev.meta.ai/docs/overview,
 // https://dev.meta.ai/docs/structured-output
+//
+// Deployment note: Vercel only applies environment variables to fresh
+// deployments. A dashboard Redeploy with "Use existing Build Cache"
+// reuses the old build, so a new env var needs a new commit (or a
+// redeploy with the build cache unchecked).
 
 const META_API_URL = 'https://api.meta.ai/v1/responses';
 const MODEL = 'muse-ember-1.0';
